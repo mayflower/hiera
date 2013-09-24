@@ -179,7 +179,7 @@ class Hiera
       # Backend instances are cached so if you need to connect to any
       # databases then do so in your constructor, future calls to your
       # backend will not create new instances
-      def lookup(key, default, scope, order_override, resolution_type)
+      def lookup_in_backends(key, default, scope, order_override, resolution_type)
         @backends ||= {}
         answer = nil
 
@@ -210,6 +210,22 @@ class Hiera
         answer = parse_string(default, scope) if answer.nil? and default.is_a?(String)
 
         return default if answer.nil?
+        return answer
+      end
+
+      def lookup(key, default, scope, order_override, resolution_type)
+        answer = lookup_in_backends(key, default, scope, order_override, resolution_type)
+
+        if resolution_type.nil?
+          if answer.kind_of? Array
+            new_resolution_type = :array
+          elsif answer.kind_of? Hash
+            new_resolution_type = :hash
+          end
+
+          return lookup_in_backends(key, default, scope, order_override, new_resolution_type) unless new_resolution_type.nil?
+        end
+
         return answer
       end
     end

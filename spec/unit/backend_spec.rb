@@ -351,6 +351,19 @@ class Hiera
         Backend.lookup("key", {}, {"rspec" => "test"}, nil, :hash).should == {"a" => "answer", "b" => "bnswer"}
       end
 
+      it "builds a merged hash from all backends for unspecified searches" do
+        backend1 = mock
+        backend1.expects(:lookup).returns({"a" => "answer"}).with(any_parameters).at_most(2)
+        backend2 = mock
+        backend2.expects(:lookup).returns({"b" => "bnswer"}).with(any_parameters).at_most(2)
+        Config.load({})
+        Config.instance_variable_set("@config", {:backends => ["first", "second"]})
+        Backend.instance_variable_set("@backends", {"first" => backend1, "second" => backend2})
+        Backend.stubs(:constants).returns(["First_backend", "Second_backend"])
+
+        Backend.lookup("key", {}, {"rspec" => "test"}, nil, nil).should == {"a" => "answer", "b" => "bnswer"}
+      end
+
       it "builds an array from all backends for array searches" do
         backend1 = mock :lookup => ["a", "b"]
         backend2 = mock :lookup => ["c", "d"]
@@ -360,6 +373,19 @@ class Hiera
         Backend.stubs(:constants).returns(["First_backend", "Second_backend"])
 
         Backend.lookup("key", {}, {"rspec" => "test"}, nil, :array).should == ["a", "b", "c", "d"]
+      end
+
+      it "builds an array from all backends for unspecified searches" do
+        backend1 = mock
+        backend1.expects(:lookup).returns(["a", "b"]).with(any_parameters).at_most(2)
+        backend2 = mock
+        backend2.expects(:lookup).returns(["c", "d"]).with(any_parameters).at_most(2)
+        Config.load({})
+        Config.instance_variable_set("@config", {:backends => ["first", "second"]})
+        Backend.instance_variable_set("@backends", {"first" => backend1, "second" => backend2})
+        Backend.stubs(:constants).returns(["First_backend", "Second_backend"])
+
+        Backend.lookup("key", {}, {"rspec" => "test"}, nil, nil).should == ["a", "b", "c", "d"]
       end
 
       it "uses the earliest backend result for priority searches" do
